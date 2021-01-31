@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Fishly:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Fishly_jar</output-path>
+    <root id="archive" name="Fishly.jar">
+      <element id="module-output" name="Fishly" />
+    </root>
+  </artifact>
+</component>
