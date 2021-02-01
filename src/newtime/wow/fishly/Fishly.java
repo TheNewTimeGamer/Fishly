@@ -1,31 +1,52 @@
 package newtime.wow.fishly;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 
 public class Fishly implements Runnable {
 
 	public static final boolean DEBUG_PREVIEW = true;
 
-	public static final int HUE_MAX = 345;
-	public static final int HUE_MIN = 17;
+	public static volatile int maxHue = 345;
+	public static volatile int minHue = 17;
 
-	public static final int DELTA_THRESHOLD = 4;
+	public static volatile int minRed = 100;
+
+	public static volatile int maxBlue = 100;
+	public static volatile int maxGreen = 100;
+
+	public static volatile int deltaThreshold = 4;
 
 	public static final int X_OFFSET = 700;
 	public static final int Y_OFFSET = 260;
 
 	public static final int MAX_FISHING_COUNTER = 60*20;
 
+	public static volatile BufferedImage screen;
+	public static volatile int foundX = 0;
+	public static volatile int highestRed = Integer.MAX_VALUE;
+
+	public static Robot robot;
+
 	public static void main(String[] args) {
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch(Exception ignored){}
+		try {
+			Fishly.robot = new Robot();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 		new Fishly();
 	}
 	
 	private Thread spottingThread;
 
-	public static boolean isDisabled = false;
+	public static volatile boolean isDisabled = true;
 
 	public Fishly() {
 		this.start();
@@ -37,6 +58,12 @@ public class Fishly implements Runnable {
 		}
 		this.spottingThread = new Thread(this);
 		this.spottingThread.start();
+
+		System.out.println("Loading preview frame..");
+		while(true) {
+			Fishly.screen = this.robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
+			Debug.showPreview(screen, highestRed, foundX);
+		}
 	}
 	
 	private void stop() {
@@ -48,15 +75,7 @@ public class Fishly implements Runnable {
 	
 	private boolean running = true;
 
-	private Robot robot;
-
 	public void run() {
-		try {
-			this.robot = new Robot();
-		}catch(AWTException e){
-			e.printStackTrace();
-		}
-
 		long last = 0;
 
 		while(running) {
@@ -91,10 +110,8 @@ public class Fishly implements Runnable {
             performDelay(1350+variation);
 		}
 
-		BufferedImage screen = this.robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
-
-		int foundX = 0;
-		int highestRed = Integer.MAX_VALUE;
+		Fishly.foundX = 0;
+		Fishly.highestRed = Integer.MAX_VALUE;
 
 		int r, g, b;
 		Color color;
@@ -106,17 +123,12 @@ public class Fishly implements Runnable {
 				g = color.getGreen();
 				b = color.getBlue();
 
-				if(isValidFeatherColor(r, g, b) && r > 200 && b < 100 && isValidBobber(screen, x, y)) {
+				if(isValidFeatherColor(r, g, b) && r > Fishly.minRed && g < Fishly.maxGreen && b < Fishly.maxBlue && isValidArea(x,y)) {
 					highestRed = y;
 					foundX = x;
-					break;
 				}
 
 			}
-		}
-
-		if(DEBUG_PREVIEW) {
-			Debug.showPreview(screen, highestRed, foundX);
 		}
 
 		if(fishingCounter-- <= 0){
@@ -126,13 +138,17 @@ public class Fishly implements Runnable {
 
 		if(deltaCounter-- <= 0) {
 			int delta = previousHighestRed - highestRed;
-			if (Math.abs(delta) > DELTA_THRESHOLD && Math.abs(delta) < 1000) {
+			if (Math.abs(delta) > Fishly.deltaThreshold && Math.abs(delta) < 1000) {
 			    System.out.println("Delta:" + delta);
 				catchFish(foundX, highestRed);
 			}
 			previousHighestRed = highestRed;
             deltaCounter = 5;
 		}
+	}
+
+	private boolean isValidArea(int x, int y){
+		return true;
 	}
 
 	// If Red is max, then Hue = (G-B)/(max-min)
@@ -163,7 +179,7 @@ public class Fishly implements Runnable {
 
 	public boolean isValidFeatherColor(int red, int green, int blue){
 		int hue = getHue(red, green, blue);
-	    if(hue < HUE_MIN || hue > HUE_MAX){
+	    if(hue < Fishly.minHue || hue > Fishly.maxHue){
 	        return true;
         }
 	    return false;
@@ -181,7 +197,7 @@ public class Fishly implements Runnable {
     }
 
     public boolean isMajorityBlue(int red, int green, int blue){
-        if(blue < red && blue < green) {
+        if(blue < red) {
             return false;
         }
 	    return true;
