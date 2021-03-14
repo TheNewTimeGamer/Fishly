@@ -1,58 +1,48 @@
-package newtime.wow.fishly;
+package newtime.wow.praetor.fishly;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 
 public class Fishly implements Runnable {
 
-	public static final boolean DEBUG_PREVIEW = true;
+	public final boolean DEBUG_PREVIEW = true;
 
-	public static volatile int maxHue = 345;
-	public static volatile int minHue = 17;
+	public volatile int maxHue = 345;
+	public volatile int minHue = 17;
 
-	public static volatile int minRed = 100;
+	public volatile int minRed = 100;
 
-	public static volatile int maxBlue = 100;
-	public static volatile int maxGreen = 100;
+	public volatile int maxBlue = 100;
+	public volatile int maxGreen = 100;
 
-	public static volatile int deltaThreshold = 4;
+	public volatile int deltaThreshold = 4;
 
-	public static final int X_OFFSET = 700;
-	public static final int Y_OFFSET = 260;
+	public final int X_OFFSET = 700;
+	public final int Y_OFFSET = 260;
 
-	public static final int MAX_FISHING_COUNTER = 60*20;
+	public final int MAX_FISHING_COUNTER = 60*20;
 
-	public static volatile BufferedImage screen;
-	public static volatile int foundX = 0;
-	public static volatile int highestRed = Integer.MAX_VALUE;
+	public volatile BufferedImage screen;
+	public volatile int foundX = 0;
+	public volatile int highestRed = Integer.MAX_VALUE;
 
-	public static Robot robot;
+	public Robot robot;
 
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch(Exception ignored){}
-		try {
-			Fishly.robot = new Robot();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-		new Fishly();
-	}
-	
 	private Thread spottingThread;
 
 	public static volatile boolean isDisabled = true;
 
 	public Fishly() {
-		this.start();
+		try {
+			this.robot = new Robot();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
-	private void start() {
+	public void start(FishingTab fishingTab) {
 		if(spottingThread != null) {
 			System.err.println("Spotting thread already active!");
 		}
@@ -61,15 +51,16 @@ public class Fishly implements Runnable {
 
 		System.out.println("Loading preview frame..");
 		while(true) {
-			Fishly.screen = this.robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
-			Debug.showPreview(screen, highestRed, foundX);
+			screen = this.robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
+			fishingTab.showPreview(screen, highestRed, foundX);
 		}
 	}
 	
-	private void stop() {
+	private void stop() throws InterruptedException {
 		if(spottingThread == null) {
 			System.err.println("Spotting thread already dead!");
 		}
+		spottingThread.join();
 	}
 	
 	
@@ -110,8 +101,8 @@ public class Fishly implements Runnable {
             performDelay(1350+variation);
 		}
 
-		Fishly.foundX = 0;
-		Fishly.highestRed = Integer.MAX_VALUE;
+		foundX = 0;
+		highestRed = Integer.MAX_VALUE;
 
 		int r, g, b;
 		Color color;
@@ -123,7 +114,7 @@ public class Fishly implements Runnable {
 				g = color.getGreen();
 				b = color.getBlue();
 
-				if(isValidFeatherColor(r, g, b) && r > Fishly.minRed && g < Fishly.maxGreen && b < Fishly.maxBlue && isValidArea(x,y)) {
+				if(isValidFeatherColor(r, g, b) && r > minRed && g < maxGreen && b < maxBlue && isValidArea(x,y)) {
 					highestRed = y;
 					foundX = x;
 				}
@@ -138,7 +129,7 @@ public class Fishly implements Runnable {
 
 		if(deltaCounter-- <= 0) {
 			int delta = previousHighestRed - highestRed;
-			if (Math.abs(delta) > Fishly.deltaThreshold && Math.abs(delta) < 1000) {
+			if (Math.abs(delta) > deltaThreshold && Math.abs(delta) < 1000) {
 			    System.out.println("Delta:" + delta);
 				catchFish(foundX, highestRed);
 			}
@@ -179,7 +170,7 @@ public class Fishly implements Runnable {
 
 	public boolean isValidFeatherColor(int red, int green, int blue){
 		int hue = getHue(red, green, blue);
-	    if(hue < Fishly.minHue || hue > Fishly.maxHue){
+	    if(hue < minHue || hue > maxHue){
 	        return true;
         }
 	    return false;
