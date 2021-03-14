@@ -38,7 +38,7 @@ public class FishingTab extends JPanel {
 
     private static JButton toggleButton = new JButton("Enable");
 
-    public FishingTab(Fishly fishly, Container container){
+    public FishingTab(Fishly fishly){
         this.fishly = fishly;
         canvas = new Canvas();
 

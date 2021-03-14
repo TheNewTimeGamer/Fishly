@@ -29,7 +29,7 @@ public class Debug {
         container = new Container();
 
         this.fishly = new Fishly();
-        this.fishingTab = new FishingTab(fishly, container);
+        this.fishingTab = new FishingTab(fishly);
         this.container.addTab("Fishly", this.fishingTab);
         container.setVisible(true);
 
