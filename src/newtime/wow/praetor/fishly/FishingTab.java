@@ -1,7 +1,6 @@
 package newtime.wow.praetor.fishly;
 
-import newtime.wow.praetor.Container;
-import org.w3c.dom.css.Rect;
+import newtime.wow.praetor.Tab;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -10,9 +9,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.Flow;
 
-public class FishingTab extends JPanel {
+public class FishingTab extends Tab {
 
     private Fishly fishly;
 
@@ -205,4 +203,11 @@ public class FishingTab extends JPanel {
         bs.show();
     }
 
+    public void onOpen() {
+        fishly.start(this);
+    }
+
+    public void onClose() {
+        fishly.stop();
+    }
 }

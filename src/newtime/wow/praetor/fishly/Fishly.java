@@ -31,6 +31,7 @@ public class Fishly implements Runnable {
 	public Robot robot;
 
 	private Thread spottingThread;
+	private Thread screenThread;
 
 	public static volatile boolean isDisabled = true;
 
@@ -43,6 +44,7 @@ public class Fishly implements Runnable {
 	}
 	
 	public void start(FishingTab fishingTab) {
+		running = true;
 		if(spottingThread != null) {
 			System.err.println("Spotting thread already active!");
 		}
@@ -50,17 +52,22 @@ public class Fishly implements Runnable {
 		this.spottingThread.start();
 
 		System.out.println("Loading preview frame..");
-		while(true) {
-			screen = this.robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
-			fishingTab.showPreview(screen, highestRed, foundX);
-		}
+
+		this.screenThread = new Thread(new Runnable() {
+			public void run() {
+				while (running) {
+					screen = robot.createScreenCapture(new Rectangle(X_OFFSET, Y_OFFSET, 500, 400));
+					fishingTab.showPreview(screen, highestRed, foundX);
+				}
+			}
+		});
+		this.screenThread.start();
 	}
 	
-	private void stop() throws InterruptedException {
-		if(spottingThread == null) {
-			System.err.println("Spotting thread already dead!");
-		}
-		spottingThread.join();
+	public void stop() {
+		running = false;
+		spottingThread.interrupt();
+		screenThread.interrupt();
 	}
 	
 	
@@ -75,7 +82,6 @@ public class Fishly implements Runnable {
 				last = System.currentTimeMillis();
 			}
 		}
-		
 	}
 
 	int deltaCounter = 60;
@@ -88,9 +94,7 @@ public class Fishly implements Runnable {
 	private void performDelay(int miliseconds){
 	    try{
 	        Thread.sleep(miliseconds);
-        }catch(Exception e){
-	        e.printStackTrace();
-        }
+        }catch(Exception e){}
     }
 
 	private void screenCap() {
@@ -107,6 +111,7 @@ public class Fishly implements Runnable {
 		int r, g, b;
 		Color color;
 
+		if(screen == null){return;}
 		for(int y = 0; y < screen.getHeight(); y++){
 			for(int x = 0; x < screen.getWidth(); x++){
 				color = new Color(screen.getRGB(x,y));
